@@ -1,59 +1,86 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(AudioSource))]
 public class HelicopterController : MonoBehaviour
 {
-    public float speed = 5f;
+    [Header("Movement")]
+    public float moveSpeed = 6f;
+
+    [Header("Audio")]
     public AudioClip pickupSound;
 
     private Rigidbody2D rb;
     private AudioSource audioSource;
     private Vector2 movement;
 
-    void Start()
+    private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         audioSource = GetComponent<AudioSource>();
     }
 
-    void Update()
+    private void Update()
     {
-        if (GameManager.Instance.IsGameEnded()) return;
+        if (GameManager.Instance != null && GameManager.Instance.IsGameEnded())
+        {
+            movement = Vector2.zero;
+            return;
+        }
 
-        float x = Input.GetAxisRaw("Horizontal");
-        float y = Input.GetAxisRaw("Vertical");
-        movement = new Vector2(x, y).normalized;
+        movement = ReadArrowKeys();
     }
 
-    void FixedUpdate()
+    private Vector2 ReadArrowKeys()
     {
-        rb.linearVelocity = movement * speed;
+        if (Keyboard.current == null) return Vector2.zero;
+
+        float x = 0f;
+        float y = 0f;
+
+        if (Keyboard.current.leftArrowKey.isPressed)  x -= 1f;
+        if (Keyboard.current.rightArrowKey.isPressed) x += 1f;
+        if (Keyboard.current.downArrowKey.isPressed)  y -= 1f;
+        if (Keyboard.current.upArrowKey.isPressed)    y += 1f;
+
+        Vector2 v = new Vector2(x, y);
+        return v.sqrMagnitude > 1f ? v.normalized : v;
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    private void FixedUpdate()
     {
+        rb.linearVelocity = movement * moveSpeed;
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (GameManager.Instance != null && GameManager.Instance.IsGameEnded()) return;
+
         if (other.CompareTag("Soldier"))
         {
-            if (GameManager.Instance.CanPickUp())
+            if (GameManager.Instance != null && GameManager.Instance.CanPickUp())
             {
-                GameManager.Instance.PickUp();
+                GameManager.Instance.PickUpSoldier();
                 Destroy(other.gameObject);
 
                 if (pickupSound != null)
                     audioSource.PlayOneShot(pickupSound);
             }
         }
-
-        if (other.CompareTag("Hospital"))
+        else if (other.CompareTag("Hospital"))
         {
-            GameManager.Instance.DropOff();
+            GameManager.Instance?.DropOffSoldiers();
         }
     }
 
-    void OnCollisionEnter2D(Collision2D collision)
+    private void OnCollisionEnter2D(Collision2D collision)
     {
+        if (GameManager.Instance != null && GameManager.Instance.IsGameEnded()) return;
+
         if (collision.collider.CompareTag("Tree"))
         {
-            GameManager.Instance.GameOver();
+            GameManager.Instance?.GameOver();
             rb.linearVelocity = Vector2.zero;
         }
     }

@@ -1,77 +1,85 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
+using TMPro;
+using UnityEngine.InputSystem;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
-    public Text rescuedText;
-    public Text inHelicopterText;
-    public Text messageText;
+    [Header("UI References")]
+    public TMP_Text rescuedText;
+    public TMP_Text inHelicopterText;
+    public TMP_Text messageText;
 
+    [Header("Game Data")]
     public int soldiersRescued = 0;
     public int soldiersInHelicopter = 0;
 
     private bool gameEnded = false;
 
-    void Awake()
+    private void Awake()
     {
-        Instance = this;
+        if (Instance == null) Instance = this;
+        else { Destroy(gameObject); return; }
     }
 
-    void Update()
+    private void Start()
     {
-        if (Input.GetKeyDown(KeyCode.R))
+        messageText.text = "";
+        UpdateUI();
+    }
+
+    private void Update()
+    {
+        // Input System: R key reset
+        if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
     }
 
-    public bool CanPickUp()
-    {
-        return soldiersInHelicopter < 3 && !gameEnded;
-    }
+    public bool CanPickUp() => soldiersInHelicopter < 3 && !gameEnded;
 
-    public void PickUp()
+    public void PickUpSoldier()
     {
+        if (gameEnded) return;
         soldiersInHelicopter++;
         UpdateUI();
-        CheckWin();
     }
 
-    public void DropOff()
+    public void DropOffSoldiers()
     {
+        if (gameEnded) return;
+
         soldiersRescued += soldiersInHelicopter;
         soldiersInHelicopter = 0;
         UpdateUI();
-        CheckWin();
+        CheckWinCondition();
     }
 
     public void GameOver()
     {
+        if (gameEnded) return;
         gameEnded = true;
-        messageText.text = "Game Over";
+        messageText.text = "GAME OVER";
     }
 
-    void CheckWin()
+    private void CheckWinCondition()
     {
-        GameObject[] soldiers = GameObject.FindGameObjectsWithTag("Soldier");
-        if (soldiers.Length == 0 && !gameEnded)
+        var remaining = GameObject.FindGameObjectsWithTag("Soldier");
+        if (remaining.Length == 0 && soldiersInHelicopter == 0 && !gameEnded)
         {
-            messageText.text = "You Win!";
             gameEnded = true;
+            messageText.text = "YOU WIN!";
         }
     }
 
-    void UpdateUI()
+    private void UpdateUI()
     {
-        rescuedText.text = "Soldiers Rescued: " + soldiersRescued;
-        inHelicopterText.text = "In Helicopter: " + soldiersInHelicopter;
+        if (rescuedText != null) rescuedText.text = $"Soldiers Rescued: {soldiersRescued}";
+        if (inHelicopterText != null) inHelicopterText.text = $"In Helicopter: {soldiersInHelicopter}";
     }
 
-    public bool IsGameEnded()
-    {
-        return gameEnded;
-    }
+    public bool IsGameEnded() => gameEnded;
 }
