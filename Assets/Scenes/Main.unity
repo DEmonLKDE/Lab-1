@@ -2002,6 +2002,10 @@ PrefabInstance:
       propertyPath: minY
       value: -2
       objectReference: {fileID: 0}
+    - target: {fileID: 8775469433112989755, guid: 70450400a1f11a743b8eaac068c4a0e4, type: 3}
+      propertyPath: moveSpeed
+      value: 3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
